@@ -1,22 +1,92 @@
 import "./App.css";
 import { Menu, Bell, User, Home, BarChart3, Settings, LogOut } from 'lucide-react';
-import { useState } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useState, useEffect } from 'react';
+import {  Bar, BarChart, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import axios from 'axios';
+
+
+interface Sheet {
+  sheetName: string;
+  data: (string | number)[][];
+}
+
+interface TransformerPMRow {
+  month: string;
+  plan: number;
+  planold: number;
+  plannew: number;
+  presentsold: number;
+  presentnew: number;
+  acceptold: number;
+  acceptnew: number;
+  notacceptold: number
+  notacceptnew: number
+}
 
 const App = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  // Mock data สำหรับ Chart
-  const salesData = [
-    { month: 'Jan', sales: 4000, revenue: 2400, customers: 240 },
-    { month: 'Feb', sales: 3000, revenue: 1398, customers: 221 },
-    { month: 'Mar', sales: 2000, revenue: 9800, customers: 229 },
-    { month: 'Apr', sales: 2780, revenue: 3908, customers: 200 },
-    { month: 'May', sales: 1890, revenue: 4800, customers: 221 },
-    { month: 'Jun', sales: 2390, revenue: 3800, customers: 250 },
-    { month: 'Jul', sales: 3490, revenue: 4300, customers: 210 },
+  const [loading, setLoading] = useState(true);
+  const [transformerPM, setTransformerPM] = useState<Sheet | null>(null);
+  const [chartData, setChartData] = useState<TransformerPMRow[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await axios.get('https://script.google.com/macros/s/AKfycbzwxaeu-8LkJQ_HIBg9_98Q2tkvU8C4ulpNiTkPF5l1x6RUOByspUXsTBT1Ilm3ZDeV8g/exec');
+        const data: Sheet[] = response.data;
+        console.log('Fetched data:', data);
+
+        // ใช้ sheet ตัวที่สองตามโครงสร้างข้อมูลจาก API
+        const sheet = data[1];
+        if (sheet && Array.isArray(sheet.data)) {
+          const transformerPMdata = sheet.data
+            .slice(5, 18) // เอาเเถว 5-17
+            .map((row): TransformerPMRow => ({
+              month: String(row[0] ?? ''),
+              plan: Number(row[1] ?? 0),
+              planold: Number(row[2] ?? 0),
+              plannew: Number(row[3] ?? 0),
+              presentsold: Number(row[4] ?? 0),
+              presentnew: Number(row[5] ?? 0),
+              acceptold: Number(row[6] ?? 0),
+              acceptnew: Number(row[7] ?? 0),
+              notacceptold: Number(row[8] ?? 0),
+              notacceptnew: Number(row[9] ?? 0)
+            }));
+
+          console.log('Transformed PM data count:', transformerPMdata.length);
+          setTransformerPM(sheet);
+          setChartData(transformerPMdata);
+          console.log(transformerPMdata)
+        }
+
+        setLoading(false);
+      } catch (err: unknown) {
+        console.error('Error fetching data:', err);
+        setError('Failed to fetch data: ' + (err instanceof Error ? err.message : String(err)));
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+
+  // mockChartData สามารถใช้สำหรับกราฟประเภทอื่นถูกตั้งไว้ถ้าต้องการในอนาคต
+  const mockChartData: TransformerPMRow[] = [
+    { month: 'ม.ค.', plan: 120, planold: 60, plannew: 60, presentsold: 95, presentnew: 25, acceptold: 80, acceptnew: 15, notacceptold: 10, notacceptnew: 2 },
+    { month: 'ก.พ.', plan: 130, planold: 65, plannew: 65, presentsold: 100, presentnew: 30, acceptold: 88, acceptnew: 20, notacceptold: 8, notacceptnew: 2 },
+    { month: 'มี.ค.', plan: 150, planold: 75, plannew: 75, presentsold: 110, presentnew: 40, acceptold: 95, acceptnew: 28, notacceptold: 7, notacceptnew: 3 },
+    { month: 'เม.ย.', plan: 140, planold: 70, plannew: 70, presentsold: 105, presentnew: 35, acceptold: 90, acceptnew: 25, notacceptold: 9, notacceptnew: 3 },
+    { month: 'พ.ค.', plan: 160, planold: 80, plannew: 80, presentsold: 120, presentnew: 40, acceptold: 102, acceptnew: 30, notacceptold: 7, notacceptnew: 3 },
+    { month: 'มิ.ย.', plan: 170, planold: 85, plannew: 85, presentsold: 130, presentnew: 45, acceptold: 110, acceptnew: 35, notacceptold: 5, notacceptnew: 5 },
+    { month: 'ก.ค.', plan: 180, planold: 90, plannew: 90, presentsold: 145, presentnew: 50, acceptold: 120, acceptnew: 38, notacceptold: 5, notacceptnew: 2 },
   ];
 
+
+  console.log(transformerPM)
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
@@ -26,7 +96,7 @@ const App = () => {
             <Menu size={24} />
           </button>
         </div>
-        
+
         <nav className="flex-1 p-3 space-y-2">
           <div className="hover:bg-slate-700 p-3 rounded cursor-pointer flex items-center gap-3 transition">
             <Home size={20} />
@@ -41,7 +111,7 @@ const App = () => {
             {sidebarOpen && <span className="font-medium">Settings</span>}
           </div>
         </nav>
-        
+
         <div className="p-3 border-t border-slate-700">
           <div className="hover:bg-slate-700 p-3 rounded cursor-pointer flex items-center gap-3 transition">
             <LogOut size={20} />
@@ -66,7 +136,7 @@ const App = () => {
         </header>
 
         {/* Content Area */}
-        <main className="flex-1 overflow-auto p-6">
+        <main className="flex flex-col">
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-l-4 border-blue-500 rounded-lg shadow p-6 hover:shadow-lg transition">
@@ -95,37 +165,36 @@ const App = () => {
           </div>
 
           {/* Charts Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition">
-              <h2 className="text-lg font-bold text-gray-900 mb-4">Sales Overview</h2>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={salesData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="sales" stroke="#3b82f6" strokeWidth={2} />
-                  <Line type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+          <div className="flex border ">
+            <div className="flex w-full flex-col">
+              <h2 className="text-lg font-bold text-gray-900 mb-4 ">แผนการนำเสนอลูกค้าบำรุงรักษาหม้อแปลง</h2>
+              {loading ? (
+                <p>Loading data...</p>
+              ) : error ? (
+                <p className="text-red-500">{error}</p>
+              ) : (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={chartData.length ? chartData : mockChartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="planold" fill="#1e40af" name="แผนเก่า" />
+                    <Bar dataKey="plannew" fill="#60a5fa" name="แผนใหม่" />
+                    <Bar dataKey="presentsold" fill="#10b981" name="นำเสนอเก่า" />
+                    <Bar dataKey="presentnew" fill="#f59e0b" name="นำเสนอใหม่" />
+                    <Bar dataKey="acceptold" fill="#ef4444" name="ตอบรับเก่า" />
+                    <Bar dataKey="acceptnew" fill="#8b5cf6" name="ตอบรับใหม่" />
+                    <Bar dataKey="notacceptold" fill="#6b7280" name="ไม่ตอบรับเก่า" />
+                    <Bar dataKey="notacceptnew" fill="#374151" name="ไม่ตอบรับใหม่" />
+                    <Bar dataKey="plan" fill="#3b82f6" name="แผน" />
+                  </BarChart>
+                </ResponsiveContainer>
 
-            <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition">
-              <h2 className="text-lg font-bold text-gray-900 mb-4">Recent Activity</h2>
-              <div className="space-y-3">
-                {[
-                  { title: 'New user signup', time: '5 mins ago' },
-                  { title: 'Order completed', time: '1 hour ago' },
-                  { title: 'Payment received', time: '3 hours ago' },
-                ].map((item, idx) => (
-                  <div key={idx} className="p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition">
-                    <p className="text-sm font-medium text-gray-800">{item.title}</p>
-                    <p className="text-xs text-gray-500 mt-1">{item.time}</p>
-                  </div>
-                ))}
-              </div>
+              )}
             </div>
+            
           </div>
         </main>
       </div>
