@@ -29,6 +29,7 @@ const App = () => {
   const [loading, setLoading] = useState(true);
   const [transformerPM, setTransformerPM] = useState<Sheet | null>(null);
   const [chartData, setChartData] = useState<TransformerPMRow[]>([]);
+  const [chartData1, setChartData1] = useState<TransformerPMRow[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -55,11 +56,29 @@ const App = () => {
               notacceptold: Number(row[8] ?? 0),
               notacceptnew: Number(row[9] ?? 0)
             }));
-
-          console.log('Transformed PM data count:', transformerPMdata.length);
           setTransformerPM(sheet);
           setChartData(transformerPMdata);
-          console.log(transformerPMdata)
+        }
+
+        // ใช้ sheet ตัวที่สามตามโครงสร้างข้อมูลจาก API
+        const sheet1 = data[2];
+        if (sheet1 && Array.isArray(sheet1.data)) {
+          const transformerPMdata1 = sheet1.data
+            .slice(4, 17) // เอาเเถว 5-17
+            .map((row): TransformerPMRow => ({
+              month: String(row[0] ?? ''),
+              plan: Number(row[1] ?? 0),
+              planold: Number(row[2] ?? 0),
+              plannew: Number(row[3] ?? 0),
+              presentsold: Number(row[4] ?? 0),
+              presentnew: Number(row[5] ?? 0),
+              acceptold: Number(row[6] ?? 0),
+              acceptnew: Number(row[7] ?? 0),
+              notacceptold: Number(row[8] ?? 0),
+              notacceptnew: Number(row[9] ?? 0)
+            }));
+
+          setChartData1(transformerPMdata1);
         }
 
         setLoading(false);
@@ -74,21 +93,12 @@ const App = () => {
   }, []);
 
 
-  // mockChartData สามารถใช้สำหรับกราฟประเภทอื่นถูกตั้งไว้ถ้าต้องการในอนาคต
-  const mockChartData: TransformerPMRow[] = [
-    { month: 'ม.ค.', plan: 120, planold: 60, plannew: 60, presentsold: 95, presentnew: 25, acceptold: 80, acceptnew: 15, notacceptold: 10, notacceptnew: 2 },
-    { month: 'ก.พ.', plan: 130, planold: 65, plannew: 65, presentsold: 100, presentnew: 30, acceptold: 88, acceptnew: 20, notacceptold: 8, notacceptnew: 2 },
-    { month: 'มี.ค.', plan: 150, planold: 75, plannew: 75, presentsold: 110, presentnew: 40, acceptold: 95, acceptnew: 28, notacceptold: 7, notacceptnew: 3 },
-    { month: 'เม.ย.', plan: 140, planold: 70, plannew: 70, presentsold: 105, presentnew: 35, acceptold: 90, acceptnew: 25, notacceptold: 9, notacceptnew: 3 },
-    { month: 'พ.ค.', plan: 160, planold: 80, plannew: 80, presentsold: 120, presentnew: 40, acceptold: 102, acceptnew: 30, notacceptold: 7, notacceptnew: 3 },
-    { month: 'มิ.ย.', plan: 170, planold: 85, plannew: 85, presentsold: 130, presentnew: 45, acceptold: 110, acceptnew: 35, notacceptold: 5, notacceptnew: 5 },
-    { month: 'ก.ค.', plan: 180, planold: 90, plannew: 90, presentsold: 145, presentnew: 50, acceptold: 120, acceptnew: 38, notacceptold: 5, notacceptnew: 2 },
-  ];
+  
 
 
   console.log(transformerPM)
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex bg-gray-50">
       {/* Sidebar */}
       <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-gradient-to-b from-slate-900 to-slate-800 text-white transition-all duration-300 flex flex-col shadow-lg`}>
         <div className="p-4 border-b border-slate-700 flex items-center justify-center">
@@ -174,7 +184,39 @@ const App = () => {
                 <p className="text-red-500">{error}</p>
               ) : (
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={chartData.length ? chartData : mockChartData}>
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="planold" fill="#1e40af" name="แผนเก่า" />
+                    <Bar dataKey="plannew" fill="#60a5fa" name="แผนใหม่" />
+                    <Bar dataKey="presentsold" fill="#10b981" name="นำเสนอเก่า" />
+                    <Bar dataKey="presentnew" fill="#f59e0b" name="นำเสนอใหม่" />
+                    <Bar dataKey="acceptold" fill="#ef4444" name="ตอบรับเก่า" />
+                    <Bar dataKey="acceptnew" fill="#8b5cf6" name="ตอบรับใหม่" />
+                    <Bar dataKey="notacceptold" fill="#6b7280" name="ไม่ตอบรับเก่า" />
+                    <Bar dataKey="notacceptnew" fill="#374151" name="ไม่ตอบรับใหม่" />
+                    <Bar dataKey="plan" fill="#3b82f6" name="แผน" />
+                  </BarChart>
+                </ResponsiveContainer>
+
+              )}
+            </div>
+            
+          </div>
+          {/* Charts Section */}
+          <div className="flex border ">
+            <div className="flex w-full flex-col">
+              <h2 className="text-lg font-bold text-gray-900 mb-4 ">แผนการนำเสนอลูกค้า</h2>
+              {loading ? (
+                <p>Loading data...</p>
+              ) : error ? (
+                <p className="text-red-500">{error}</p>
+              ) : (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={chartData1}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
                     <YAxis />
